@@ -2,14 +2,24 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+
+
+
 
 /**
- *
- * This is just a demo for you, please run it on JDK17 (some statements may be not allowed in lower version).
- * This is just a demo, and you can extend and implement functions
+ * This is just a demo for you, please run it on JDK17.
+ * This is just a demo, and you can extend and implement functions.
  * based on this demo, or implement it in a different way.
  */
 public class OnlineCoursesAnalyzer {
@@ -24,13 +34,25 @@ public class OnlineCoursesAnalyzer {
             br.readLine();
             while ((line = br.readLine()) != null) {
                 String[] info = line.split(",(?=([^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)", -1);
-                Course course = new Course(info[0], info[1], new Date(info[2]), info[3], info[4], info[5],
-                        Integer.parseInt(info[6]), Integer.parseInt(info[7]), Integer.parseInt(info[8]),
-                        Integer.parseInt(info[9]), Integer.parseInt(info[10]), Double.parseDouble(info[11]),
-                        Double.parseDouble(info[12]), Double.parseDouble(info[13]), Double.parseDouble(info[14]),
-                        Double.parseDouble(info[15]), Double.parseDouble(info[16]), Double.parseDouble(info[17]),
-                        Double.parseDouble(info[18]), Double.parseDouble(info[19]), Double.parseDouble(info[20]),
-                        Double.parseDouble(info[21]), Double.parseDouble(info[22]));
+                Course course = new Course(info[0], info[1], new Date(info[2]),
+                        info[3], info[4], info[5],
+                        Integer.parseInt(info[6]),
+                        Integer.parseInt(info[7]),
+                        Integer.parseInt(info[8]),
+                        Integer.parseInt(info[9]),
+                        Integer.parseInt(info[10]),
+                        Double.parseDouble(info[11]),
+                        Double.parseDouble(info[12]),
+                        Double.parseDouble(info[13]),
+                        Double.parseDouble(info[14]),
+                        Double.parseDouble(info[15]),
+                        Double.parseDouble(info[16]),
+                        Double.parseDouble(info[17]),
+                        Double.parseDouble(info[18]),
+                        Double.parseDouble(info[19]),
+                        Double.parseDouble(info[20]),
+                        Double.parseDouble(info[21]),
+                        Double.parseDouble(info[22]));
                 courses.add(course);
             }
         } catch (IOException e) {
@@ -49,7 +71,9 @@ public class OnlineCoursesAnalyzer {
     //1
     public Map<String, Integer> getPtcpCountByInst() {
         Map<String, Integer> countByInst;
-        countByInst = courses.stream().collect(Collectors.groupingBy(Course::getInstitution, Collectors.summingInt(Course::getParticipants)));
+        countByInst = courses.stream()
+                .collect(Collectors.groupingBy(Course::getInstitution,
+                         Collectors.summingInt(Course::getParticipants)));
         return countByInst;
     }
 
@@ -57,7 +81,8 @@ public class OnlineCoursesAnalyzer {
     public Map<String, Integer> getPtcpCountByInstAndSubject() {
         Map<String, Integer> countByInstAndSubject;
         countByInstAndSubject = courses.stream()
-                .collect(Collectors.groupingBy(course -> course.getInstitution() + "-" + course.getSubject(), Collectors.summingInt(Course::getParticipants)));
+                .collect(Collectors.groupingBy(course -> course.getInstitution() + "-" + course.getSubject(),
+                         Collectors.summingInt(Course::getParticipants)));
         Map<String, Integer> sortedCountByInstAndSubject = new LinkedHashMap<>();
         countByInstAndSubject.entrySet().stream()
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()))
@@ -156,37 +181,28 @@ public class OnlineCoursesAnalyzer {
             double similarity = Math.pow(age - courseAverageMedianAge.get(courseNumber), 2)
                     + Math.pow(gender * 100 - courseAveragePercentMale.get(courseNumber), 2)
                     + Math.pow(isBachelorOrHigher * 100 - courseAveragePercentDegree.get(courseNumber), 2);
-            similarityMap.put(courseNumber, similarity);
+            String courseTitle = courseNumber2CourseTitle.get(courseNumber).isPresent() ? courseNumber2CourseTitle.get(courseNumber).get().getTitle() : null;
+            if (courseTitle == null) continue;
+            if (similarityMap.containsKey(courseTitle) && similarityMap.get(courseTitle) < similarity) continue;
+            similarityMap.put(courseTitle, similarity);
         }
-        List<String> sortedCourseNumberBySimilarity = new ArrayList<>();
+        List<String> sortedCourseTitleBySimilarity = new ArrayList<>();
         similarityMap.entrySet().stream()
                 .sorted(Map.Entry.<String, Double>comparingByValue().thenComparing(Map.Entry.comparingByKey()))
-                .forEachOrdered(entry -> sortedCourseNumberBySimilarity.add(entry.getKey()));
-
+                .forEachOrdered(entry -> sortedCourseTitleBySimilarity.add(entry.getKey()));
         // add recommended courses to the list
         int count = 0;
-        for (String courseNumber : sortedCourseNumberBySimilarity) {
+        for (String courseTitle : sortedCourseTitleBySimilarity) {
             if (count == 10) {
                 break;
             }
-            String courseTitle = courseNumber2CourseTitle.get(courseNumber).isPresent()? courseNumber2CourseTitle.get(courseNumber).get().getTitle() : null;
-            if (courseTitle != null && !recommendedCourses.contains(courseTitle)) {
+            if (!recommendedCourses.contains(courseTitle)) {
                 recommendedCourses.add(courseTitle);
                 count++;
             }
         }
         return recommendedCourses;
     }
-
-    public static void main(String[] args) {
-        OnlineCoursesAnalyzer test = new OnlineCoursesAnalyzer("D:\\CS209A\\Assignment1\\resources\\local.csv");
-        test.recommendCourses(25, 1, 1);
-        System.out.println("-----------------------------------");
-        test.recommendCourses(30, 0, 1);
-        System.out.println("-----------------------------------");
-        test.recommendCourses(35, 1, 0);
-    }
-
 }
 
 class Course {
@@ -237,48 +253,8 @@ class Course {
         return subject;
     }
 
-    public int getYear() {
-        return year;
-    }
-
-    public int getHonorCode() {
-        return honorCode;
-    }
-
-    public int getAudited() {
-        return audited;
-    }
-
-    public int getCertified() {
-        return certified;
-    }
-
     public double getPercentAudited() {
         return percentAudited;
-    }
-
-    public double getPercentCertified() {
-        return percentCertified;
-    }
-
-    public double getPercentCertified50() {
-        return percentCertified50;
-    }
-
-    public double getPercentVideo() {
-        return percentVideo;
-    }
-
-    public double getPercentForum() {
-        return percentForum;
-    }
-
-    public double getGradeHigherZero() {
-        return gradeHigherZero;
-    }
-
-    public double getMedianHoursCertification() {
-        return medianHoursCertification;
     }
 
     public double getMedianAge() {
@@ -287,10 +263,6 @@ class Course {
 
     public double getPercentMale() {
         return percentMale;
-    }
-
-    public double getPercentFemale() {
-        return percentFemale;
     }
 
     public double getPercentDegree() {
